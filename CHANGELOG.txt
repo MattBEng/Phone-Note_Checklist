@@ -1,0 +1,39 @@
+CHECKLIST APP - CHANGE LOG
+(plain language, newest at the top)
+
+===========================================
+2026-09-14
+===========================================
+- Widget styling re-applied (it had reverted to the plain version, likely from
+  the git fetch/reset). Changes: solid white background instead of see-through,
+  bigger bold text, bigger "+ Add" button text.
+- File changed: app/src/main/kotlin/com/mattbrady/checklist/widget/ChecklistWidget.kt
+- Next step for you: run git add, git commit, git push so this reaches GitHub
+  and triggers a new build.
+
+===========================================
+Earlier this project (summary)
+===========================================
+- Built the whole app: Kotlin + Jetpack Compose screen, Jetpack Glance home
+  screen widget, Room database for offline storage, Retrofit for talking to
+  the server, WorkManager for background sync.
+- Built the server side: a Cloudflare Worker + D1 database, deployed at
+  https://checklist-api.matthew-brady1990.workers.dev
+- Set up GitHub Actions so every push automatically builds an APK and
+  publishes it to a GitHub Release (Releases page in your repo).
+- Fixed two rounds of Actions build failures:
+  1) sdkmanager not found on the build server - fixed the workflow step to
+     search for it instead of assuming a fixed path.
+  2) Several Kotlin "unresolved reference" compile errors - missing imports
+     (SyncScheduler, width, updateAll), wrong dp/GlanceTheme import paths, and
+     a wrong Retrofit converter dependency swapped for the correct one.
+- First widget styling pass: bigger text, solid background, bigger button
+  (this is the change that reverted and got re-applied today, see above).
+
+===========================================
+How to read this file
+===========================================
+Every time I (Claude) change a file on your machine through the connected
+folder, I'll add an entry here with the date, what changed, which file(s),
+and anything you need to do next (usually: commit and push). Newest entries
+go at the top.
