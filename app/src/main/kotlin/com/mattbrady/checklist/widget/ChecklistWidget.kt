@@ -1,8 +1,10 @@
 package com.mattbrady.checklist.widget
 
 import android.content.Context
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
 import androidx.glance.Button
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
@@ -15,10 +17,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.defaultWeight
-import androidx.glance.material3.GlanceTheme
 import androidx.glance.text.Text
-import androidx.glance.unit.dp
 import com.mattbrady.checklist.data.local.AppDatabase
 import com.mattbrady.checklist.ui.CaptureActivity
 
@@ -39,7 +38,8 @@ class ChecklistWidget : GlanceAppWidget() {
             GlanceTheme {
                 Column(modifier = GlanceModifier.fillMaxSize().padding(12.dp)) {
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        Text(text = "Checklist", modifier = GlanceModifier.defaultWeight())
+                        Text(text = "Checklist")
+                        Spacer(modifier = GlanceModifier.height(1.dp).defaultWeight())
                         Button(text = "+ Add", onClick = actionStartActivity<CaptureActivity>())
                     }
                     Spacer(modifier = GlanceModifier.height(8.dp))
@@ -51,7 +51,8 @@ class ChecklistWidget : GlanceAppWidget() {
                                 .filter { it.categoryId == category.id }
                                 .sumOf { it.openCount }
                             Row(modifier = GlanceModifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                Text(text = category.name, modifier = GlanceModifier.defaultWeight())
+                                Text(text = category.name)
+                                Spacer(modifier = GlanceModifier.height(1.dp).defaultWeight())
                                 Text(text = "$openCount open")
                             }
                         }

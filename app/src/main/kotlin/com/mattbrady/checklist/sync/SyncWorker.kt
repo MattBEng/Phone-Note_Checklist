@@ -1,6 +1,7 @@
 package com.mattbrady.checklist.sync
 
 import android.content.Context
+import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.mattbrady.checklist.ChecklistApp
