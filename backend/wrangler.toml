@@ -7,4 +7,4 @@ compatibility_date = "2026-09-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "checklist"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "caa9f908-b8c1-4f30-b2cf-c92e98a8ffad"

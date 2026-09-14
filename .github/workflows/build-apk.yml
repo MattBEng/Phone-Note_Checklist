@@ -26,11 +26,19 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-
+          
       - name: Accept Android SDK licenses and install required packages
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER=$(find "$ANDROID_HOME" -name sdkmanager -type f 2>/dev/null | sort -r | head -n1)
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Could not find sdkmanager under $ANDROID_HOME" >&2
+            find "$ANDROID_HOME" -maxdepth 4 >&2
+            exit 1
+          fi
+          echo "Using sdkmanager at: $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
