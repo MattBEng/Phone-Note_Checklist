@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:name=".ChecklistApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.Checklist">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Checklist">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Floating quick-capture screen launched from the home screen widget.
+             Looks like it's part of the widget; it's actually a translucent
+             activity overlaid on the home screen (see SETUP.md for why). -->
+        <activity
+            android:name=".ui.CaptureActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Checklist.Transparent"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:noHistory="true"
+            android:windowSoftInputMode="stateVisible"
+            android:taskAffinity="" />
+
+        <receiver
+            android:name=".widget.ChecklistWidgetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/checklist_widget_info" />
+        </receiver>
+
+    </application>
+
+</manifest>

@@ -1,0 +1,275 @@
+package com.mattbrady.checklist.ui
+
+import android.content.Intent
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import com.mattbrady.checklist.ChecklistApp
+import com.mattbrady.checklist.data.Prefs
+import com.mattbrady.checklist.data.SyncResult
+import com.mattbrady.checklist.data.local.NoteEntity
+import kotlinx.coroutines.launch
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme {
+                ChecklistScreen()
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChecklistScreen() {
+    val context = LocalContext.current
+    val repo = remember { ChecklistApp.repository(context) }
+    val scope = rememberCoroutineScope()
+
+    val baseUrl by Prefs.baseUrl(context).collectAsState(initial = null)
+    val token by Prefs.token(context).collectAsState(initial = null)
+    val notes by repo.observeNotes().collectAsState(initial = emptyList())
+
+    var showSettings by remember { mutableStateOf(false) }
+    var syncing by remember { mutableStateOf(false) }
+    var syncMessage by remember { mutableStateOf<String?>(null) }
+
+    val configured = !baseUrl.isNullOrBlank() && !token.isNullOrBlank()
+
+    fun runSync() {
+        scope.launch {
+            syncing = true
+            syncMessage = null
+            syncMessage = when (val result = repo.syncNow()) {
+                is SyncResult.Success -> "Synced"
+                is SyncResult.NotConfigured -> "Add your Worker URL and token first"
+                is SyncResult.Failed -> "Sync failed: ${result.message}"
+            }
+            syncing = false
+        }
+    }
+
+    LaunchedEffect(configured) {
+        if (configured) runSync()
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Checklist") },
+                actions = {
+                    IconButton(onClick = { runSync() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Sync")
+                    }
+                    IconButton(onClick = { showSettings = true }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                },
+            )
+        },
+        floatingActionButton = {
+            if (configured) {
+                FloatingActionButton(
+                    onClick = { context.startActivity(Intent(context, CaptureActivity::class.java)) },
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add note")
+                }
+            }
+        },
+    ) { padding ->
+        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (syncing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+
+            if (!configured || showSettings) {
+                SettingsForm(
+                    initialUrl = baseUrl ?: "",
+                    initialToken = token ?: "",
+                    canDismiss = configured,
+                    onSave = { url, tok ->
+                        scope.launch {
+                            Prefs.setBaseUrl(context, url.trim())
+                            Prefs.setToken(context, tok.trim())
+                            showSettings = false
+                            runSync()
+                        }
+                    },
+                    onDismiss = { showSettings = false },
+                )
+            } else {
+                syncMessage?.let {
+                    Text(it, modifier = Modifier.padding(8.dp), style = MaterialTheme.typography.bodySmall)
+                }
+                NotesList(
+                    notes = notes,
+                    onToggle = { note, done -> scope.launch { repo.toggleDone(note.localId, done) } },
+                    onDelete = { note -> scope.launch { repo.deleteNote(note.localId) } },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsForm(
+    initialUrl: String,
+    initialToken: String,
+    canDismiss: Boolean,
+    onSave: (String, String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var url by remember { mutableStateOf(initialUrl) }
+    var tok by remember { mutableStateOf(initialToken) }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Connect to your Worker", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "From SETUP.md: the Worker URL you deployed, and the API_TOKEN you set.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = url,
+            onValueChange = { url = it },
+            label = { Text("Worker URL") },
+            placeholder = { Text("https://checklist-api.<you>.workers.dev") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = tok,
+            onValueChange = { tok = it },
+            label = { Text("API token") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+            if (canDismiss) {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+                Spacer(Modifier.width(8.dp))
+            }
+            Button(onClick = { if (url.isNotBlank() && tok.isNotBlank()) onSave(url, tok) }) {
+                Text("Save")
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesList(
+    notes: List<NoteEntity>,
+    onToggle: (NoteEntity, Boolean) -> Unit,
+    onDelete: (NoteEntity) -> Unit,
+) {
+    if (notes.isEmpty()) {
+        Text(
+            "Nothing yet. Tap + and type: Category Subcategory your note.",
+            modifier = Modifier.padding(16.dp),
+        )
+        return
+    }
+
+    val grouped = notes
+        .groupBy { it.category.ifBlank { "Uncategorised" } }
+        .toSortedMap(compareBy { it.lowercase() })
+
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        for ((category, categoryNotes) in grouped) {
+            item {
+                Text(
+                    category,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
+                )
+            }
+            val bySubcategory = categoryNotes
+                .groupBy { it.subcategory.ifBlank { "General" } }
+                .toSortedMap(compareBy { it.lowercase() })
+
+            for ((subcategory, subNotes) in bySubcategory) {
+                item {
+                    Text(
+                        subcategory,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 2.dp),
+                    )
+                }
+                items(subNotes.sortedByDescending { it.createdAt }) { note ->
+                    NoteRow(note = note, onToggle = onToggle, onDelete = onDelete)
+                }
+            }
+        }
+        item { Spacer(Modifier.height(80.dp)) }
+    }
+}
+
+@Composable
+private fun NoteRow(
+    note: NoteEntity,
+    onToggle: (NoteEntity, Boolean) -> Unit,
+    onDelete: (NoteEntity) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 32.dp, end = 8.dp, top = 2.dp, bottom = 2.dp),
+    ) {
+        Checkbox(checked = note.done, onCheckedChange = { onToggle(note, it) })
+        Text(
+            text = note.body.ifBlank { "(no text)" },
+            style = if (note.done) {
+                MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.LineThrough)
+            } else {
+                MaterialTheme.typography.bodyMedium
+            },
+            modifier = Modifier.padding(top = 12.dp).weight(1f),
+        )
+        IconButton(onClick = { onDelete(note) }) {
+            Icon(Icons.Default.Delete, contentDescription = "Delete")
+        }
+    }
+}

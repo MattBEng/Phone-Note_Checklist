@@ -1,0 +1,56 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "app/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Accept Android SDK licenses and install required packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk checklist-debug.apk
+
+      - name: Publish rolling release with the APK attached
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-apk
+          name: "Latest build (${{ github.sha }})"
+          body: |
+            Automatic debug build from the latest push to `main`.
+            Download `checklist-debug.apk` below, transfer it to your phone, and install it
+            (you'll need to allow installs from this source once — see SETUP.md).
+          files: checklist-debug.apk
+          prerelease: true

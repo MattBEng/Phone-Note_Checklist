@@ -1,0 +1,18 @@
+# Android / Gradle
+*.iml
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Backend (Cloudflare Worker)
+backend/node_modules/
+backend/.wrangler/
+backend/.dev.vars
+
+# OS
+.DS_Store

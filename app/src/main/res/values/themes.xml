@@ -1,0 +1,22 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Base theme. Actual colors/typography come from Compose MaterialTheme;
+         this only needs to exist for the manifest and the widget's host
+         activities to have a valid android:theme. -->
+    <style name="Theme.Checklist" parent="Theme.Material3.DayNight.NoActionBar" />
+
+    <!-- Used only by CaptureActivity: makes it render as a floating overlay
+         on top of the home screen instead of a full-screen activity, which
+         is how every "type into a widget" note app (Keep, Tasks, etc.)
+         actually works — see SETUP.md. -->
+    <style name="Theme.Checklist.Transparent" parent="Theme.Checklist">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+    </style>
+
+</resources>

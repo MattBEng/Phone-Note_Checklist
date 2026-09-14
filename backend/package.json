@@ -1,0 +1,15 @@
+{
+  "name": "checklist-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute checklist --remote --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "@cloudflare/workers-types": "^5.0.0",
+    "typescript": "^5.5.0"
+  }
+}

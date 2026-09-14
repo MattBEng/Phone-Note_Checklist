@@ -1,0 +1,10 @@
+name = "checklist-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Created by `wrangler d1 create checklist` — paste the database_id it prints
+# below. See ../SETUP.md.
+[[d1_databases]]
+binding = "DB"
+database_name = "checklist"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

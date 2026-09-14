@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Checklist</string>
+    <string name="widget_description">Quick-add checklist notes, auto-sorted into categories</string>
+</resources>
