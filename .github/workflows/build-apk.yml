@@ -26,7 +26,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          
+
       - name: Accept Android SDK licenses and install required packages
         run: |
           SDKMANAGER=$(find "$ANDROID_HOME" -name sdkmanager -type f 2>/dev/null | sort -r | head -n1)
@@ -38,7 +38,6 @@ jobs:
           echo "Using sdkmanager at: $SDKMANAGER"
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
-      
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -46,7 +45,7 @@ jobs:
           gradle-version: "8.9"
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace -PversionCode=${{ github.run_number }}
 
       - name: Rename APK
         run: cp app/build/outputs/apk/debug/app-debug.apk checklist-debug.apk
@@ -55,7 +54,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest-apk
-          name: "Latest build (${{ github.sha }})"
+          name: "v${{ github.run_number }} (${{ github.sha }})"
           body: |
             Automatic debug build from the latest push to `main`.
             Download `checklist-debug.apk` below, transfer it to your phone, and install it

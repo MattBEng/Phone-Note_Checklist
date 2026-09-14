@@ -1,9 +1,16 @@
 package com.mattbrady.checklist.ui
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,10 +52,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.mattbrady.checklist.BuildConfig
 import com.mattbrady.checklist.ChecklistApp
 import com.mattbrady.checklist.data.Prefs
 import com.mattbrady.checklist.data.SyncResult
 import com.mattbrady.checklist.data.local.NoteEntity
+import com.mattbrady.checklist.update.UpdateChecker
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -76,8 +86,13 @@ private fun ChecklistScreen() {
     var showSettings by remember { mutableStateOf(false) }
     var syncing by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    var updateInfo by remember { mutableStateOf<UpdateChecker.UpdateInfo?>(null) }
 
     val configured = !baseUrl.isNullOrBlank() && !token.isNullOrBlank()
+
+    LaunchedEffect(Unit) {
+        updateInfo = UpdateChecker.checkForUpdate(BuildConfig.VERSION_CODE)
+    }
 
     fun runSync() {
         scope.launch {
@@ -121,6 +136,12 @@ private fun ChecklistScreen() {
         },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+            updateInfo?.let { info ->
+                UpdateBanner(
+                    info = info,
+                    onUpdateClick = { downloadAndInstallUpdate(context, info.downloadUrl) },
+                )
+            }
             if (syncing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 
             if (!configured || showSettings) {
@@ -273,4 +294,72 @@ private fun NoteRow(
             Icon(Icons.Default.Delete, contentDescription = "Delete")
         }
     }
+}
+
+@Composable
+private fun UpdateBanner(info: UpdateChecker.UpdateInfo, onUpdateClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = "Update available (${info.versionLabel})",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(end = 8.dp),
+        )
+        Button(onClick = onUpdateClick) { Text("Update") }
+    }
+}
+
+/**
+ * Downloads the new APK and, once it's done, opens Android's own install
+ * screen for it (you still have to tap "Install" there yourself - Android
+ * doesn't allow apps to install updates silently unless they came from the
+ * Play Store). If "install unknown apps" hasn't been allowed for this app
+ * yet, this sends you to the one settings screen to turn it on, then you
+ * just tap Update again.
+ */
+private fun downloadAndInstallUpdate(context: Context, downloadUrl: String) {
+    if (!context.packageManager.canRequestPackageInstalls()) {
+        context.startActivity(
+            Intent(
+                Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:${context.packageName}"),
+            ),
+        )
+        return
+    }
+
+    val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    val request = DownloadManager.Request(Uri.parse(downloadUrl))
+        .setTitle("Checklist update")
+        .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        .setDestinationInExternalFilesDir(context, android.os.Environment.DIRECTORY_DOWNLOADS, "checklist-update.apk")
+    val downloadId = downloadManager.enqueue(request)
+
+    val receiver = object : BroadcastReceiver() {
+        override fun onReceive(receiverContext: Context, intent: Intent) {
+            val finishedId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            if (finishedId != downloadId) return
+            receiverContext.unregisterReceiver(this)
+
+            val apkUri = downloadManager.getUriForDownloadedFile(finishedId) ?: return
+            receiverContext.startActivity(
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(apkUri, "application/vnd.android.package-archive")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+                },
+            )
+        }
+    }
+
+    ContextCompat.registerReceiver(
+        context,
+        receiver,
+        IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+        ContextCompat.RECEIVER_NOT_EXPORTED,
+    )
 }

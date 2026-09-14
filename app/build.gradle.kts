@@ -6,6 +6,11 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// The build server passes -PversionCode=<build number> so every automatic
+// build gets a unique, increasing version code. Building locally (no flag
+// passed) just falls back to 1.
+val ciVersionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+
 android {
     namespace = "com.mattbrady.checklist"
     compileSdk = 35
@@ -14,7 +19,7 @@ android {
         applicationId = "com.mattbrady.checklist"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = ciVersionCode
         versionName = "1.0"
     }
 
@@ -35,6 +40,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
