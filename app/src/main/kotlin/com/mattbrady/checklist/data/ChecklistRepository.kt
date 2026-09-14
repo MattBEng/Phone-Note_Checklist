@@ -1,12 +1,14 @@
 package com.mattbrady.checklist.data
 
 import android.content.Context
+import androidx.glance.appwidget.updateAll
 import com.mattbrady.checklist.data.local.AppDatabase
 import com.mattbrady.checklist.data.local.NoteEntity
 import com.mattbrady.checklist.data.remote.ApiClientProvider
 import com.mattbrady.checklist.data.remote.CreateNoteRequest
 import com.mattbrady.checklist.data.remote.UpdateNoteRequest
 import com.mattbrady.checklist.sync.SyncScheduler
+import com.mattbrady.checklist.widget.ChecklistWidget
 import kotlinx.coroutines.flow.Flow
 
 sealed class SyncResult {
@@ -92,6 +94,12 @@ class ChecklistRepository(
 
             val tree = api.getCategories()
             db.categoryDao().replaceTree(tree.categories)
+
+            // Redraw the widget too - without this, only the app screen (which
+            // watches the database live) updates after a sync. The widget reads
+            // a one-off snapshot each time it's drawn, so it needs to be told
+            // explicitly, or it just keeps showing whatever it last drew.
+            ChecklistWidget().updateAll(context)
 
             SyncResult.Success
         } catch (e: Exception) {

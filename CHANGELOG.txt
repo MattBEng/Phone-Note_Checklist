@@ -2,6 +2,29 @@ CHECKLIST APP - CHANGE LOG
 (plain language, newest at the top)
 
 ===========================================
+2026-09-14 (d)
+===========================================
+- Fixed the "have to delete the app every time" problem. The real cause:
+  every GitHub Actions build was happening on a fresh throwaway machine with
+  no saved signing key, so Gradle silently generated a brand new random
+  signing key on every single build. Android refuses to install a new APK
+  over an old one if the signing key doesn't match - that's why you were
+  always forced to uninstall first. It also would have made the auto-update
+  button useless, since in-place updates require the signature to match.
+- Fix: added a permanent signing key (app/debug.keystore) and pointed
+  build.gradle.kts at it, so every build from now on - yours and GitHub's -
+  uses the same key.
+- Files changed: app/build.gradle.kts
+- File added: app/debug.keystore
+- ONE-TIME step needed: because this build's signature is different from
+  every earlier build's (each of which used a random one), you'll need to
+  uninstall the app ONE more time before installing the next build. After
+  that, every future build should update in place - no more uninstalling.
+- Also: if the widget shows old data or doesn't respond to taps after an
+  update, remove it from your home screen and add it again fresh - that
+  makes it reconnect to the currently installed app.
+
+===========================================
 2026-09-14 (c)
 ===========================================
 - Widget categories are now tappable. Tap a category name in the widget and
@@ -25,11 +48,8 @@ CHECKLIST APP - CHANGE LOG
   specifically. Turn that on, then tap Update again.
 - Files changed: app/build.gradle.kts, AndroidManifest.xml, MainActivity.kt
 - File added: app/src/main/kotlin/com/mattbrady/checklist/update/UpdateChecker.kt
-- IMPORTANT - one manual step needed: I can't edit the GitHub Actions
-  workflow file directly (it's protected), so you need to paste an updated
-  version of .github/workflows/build-apk.yml yourself. See the chat message
-  for the exact content to paste in. Without this step, every build will
-  still show up as "v1" and the update banner will never appear.
+- Needed a manual paste into .github/workflows/build-apk.yml (protected
+  file) to add build numbering - see chat history for that content.
 
 ===========================================
 2026-09-14 (a)
@@ -49,14 +69,9 @@ Earlier this project (summary)
   https://checklist-api.matthew-brady1990.workers.dev
 - Set up GitHub Actions so every push automatically builds an APK and
   publishes it to a GitHub Release (Releases page in your repo).
-- Fixed two rounds of Actions build failures:
-  1) sdkmanager not found on the build server - fixed the workflow step to
-     search for it instead of assuming a fixed path.
-  2) Several Kotlin "unresolved reference" compile errors - missing imports
-     (SyncScheduler, width, updateAll), wrong dp/GlanceTheme import paths, and
-     a wrong Retrofit converter dependency swapped for the correct one.
-- First widget styling pass: bigger text, solid background, bigger button
-  (this is the change that reverted and got re-applied on 2026-09-14, above).
+- Fixed two rounds of Actions build failures (missing imports, wrong Glance/
+  Retrofit package paths).
+- First widget styling pass: bigger text, solid background, bigger button.
 
 ===========================================
 How to read this file
