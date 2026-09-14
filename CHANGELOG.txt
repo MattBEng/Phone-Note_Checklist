@@ -2,6 +2,16 @@ CHECKLIST APP - CHANGE LOG
 (plain language, newest at the top)
 
 ===========================================
+2026-09-14 (c)
+===========================================
+- Widget categories are now tappable. Tap a category name in the widget and
+  it expands in place to show its subcategories underneath (with each
+  subcategory's open count). Tap it again to collapse it. No app screen
+  opens - it all happens right there in the widget.
+- File changed: app/src/main/kotlin/com/mattbrady/checklist/widget/ChecklistWidget.kt
+- Nothing else to configure - just build and install the new APK as usual.
+
+===========================================
 2026-09-14 (b)
 ===========================================
 - Added auto-update checking. Every time you open the main Checklist app
