@@ -57,16 +57,18 @@ object UpdateChecker {
                 val latest = releases.firstOrNull() ?: return@withContext null
 
                 val label = latest.name ?: latest.tagName
-                val versionCode = Regex("""v(\d+)""").find(label)
-                    ?.groupValues?.get(1)?.toIntOrNull()
-                    ?: return@withContext null
+                val match = Regex("""v(\d+)""").find(label) ?: return@withContext null
+                val versionCode = match.groupValues[1].toIntOrNull() ?: return@withContext null
 
                 if (versionCode <= currentVersionCode) return@withContext null
 
                 val apkAsset = latest.assets.firstOrNull { it.name.endsWith(".apk") }
                     ?: return@withContext null
 
-                UpdateInfo(versionCode, label, apkAsset.browserDownloadUrl)
+                // Just "v9", not the full release name (which also has the long
+                // commit hash tacked on) - keeps the update banner short enough
+                // to fit on screen next to the Update button.
+                UpdateInfo(versionCode, match.value, apkAsset.browserDownloadUrl)
             }
         } catch (e: Exception) {
             null

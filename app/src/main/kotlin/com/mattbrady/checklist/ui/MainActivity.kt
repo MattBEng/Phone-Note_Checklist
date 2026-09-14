@@ -298,19 +298,22 @@ private fun NoteRow(
 
 @Composable
 private fun UpdateBanner(info: UpdateChecker.UpdateInfo, onUpdateClick: () -> Unit) {
-    Row(
+    // Stacked (not side-by-side) so the button can never get squeezed off
+    // screen by a long label, whatever width the phone has.
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = "Update available (${info.versionLabel})",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(end = 8.dp),
         )
-        Button(onClick = onUpdateClick) { Text("Update") }
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = onUpdateClick, modifier = Modifier.fillMaxWidth()) {
+            Text("Update")
+        }
     }
 }
 
