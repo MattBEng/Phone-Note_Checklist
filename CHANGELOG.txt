@@ -2,14 +2,32 @@ CHECKLIST APP - CHANGE LOG
 (plain language, newest at the top)
 
 ===========================================
-2026-09-14
+2026-09-14 (b)
+===========================================
+- Added auto-update checking. Every time you open the main Checklist app
+  screen, it quietly asks GitHub if a newer build exists. If so, a banner
+  appears at the top: "Update available (vXX)" with an Update button.
+  Tapping it downloads the new APK and opens Android's install screen -
+  you still tap "Install" yourself (Android doesn't allow silent installs
+  outside the Play Store, this gets you as close as possible: one tap).
+- The very first time you use this, Android may instead send you to a
+  settings screen to allow "install unknown apps" for the Checklist app
+  specifically. Turn that on, then tap Update again.
+- Files changed: app/build.gradle.kts, AndroidManifest.xml, MainActivity.kt
+- File added: app/src/main/kotlin/com/mattbrady/checklist/update/UpdateChecker.kt
+- IMPORTANT - one manual step needed: I can't edit the GitHub Actions
+  workflow file directly (it's protected), so you need to paste an updated
+  version of .github/workflows/build-apk.yml yourself. See the chat message
+  for the exact content to paste in. Without this step, every build will
+  still show up as "v1" and the update banner will never appear.
+
+===========================================
+2026-09-14 (a)
 ===========================================
 - Widget styling re-applied (it had reverted to the plain version, likely from
   the git fetch/reset). Changes: solid white background instead of see-through,
   bigger bold text, bigger "+ Add" button text.
 - File changed: app/src/main/kotlin/com/mattbrady/checklist/widget/ChecklistWidget.kt
-- Next step for you: run git add, git commit, git push so this reaches GitHub
-  and triggers a new build.
 
 ===========================================
 Earlier this project (summary)
@@ -28,7 +46,7 @@ Earlier this project (summary)
      (SyncScheduler, width, updateAll), wrong dp/GlanceTheme import paths, and
      a wrong Retrofit converter dependency swapped for the correct one.
 - First widget styling pass: bigger text, solid background, bigger button
-  (this is the change that reverted and got re-applied today, see above).
+  (this is the change that reverted and got re-applied on 2026-09-14, above).
 
 ===========================================
 How to read this file
