@@ -53,6 +53,7 @@ class ChecklistWidget : GlanceAppWidget() {
         val db = AppDatabase.getInstance(context)
         val categories = db.categoryDao().getCategoriesOnce()
         val subcategories = db.categoryDao().getSubcategoriesOnce()
+        val openNotes = db.noteDao().getOpenNotesOnce()
 
         provideContent {
             val prefs = currentState<Preferences>()
@@ -119,12 +120,36 @@ class ChecklistWidget : GlanceAppWidget() {
                                     ) {
                                         Text(
                                             text = sub.name,
-                                            style = TextStyle(fontSize = 14.sp),
+                                            style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold),
                                         )
                                         Spacer(modifier = GlanceModifier.height(1.dp).defaultWeight())
                                         Text(
                                             text = "${sub.openCount} open",
                                             style = TextStyle(fontSize = 14.sp),
+                                        )
+                                    }
+
+                                    // Second tier: the actual open items in this
+                                    // subcategory, not just its count. Notes are
+                                    // matched by category/subcategory name since
+                                    // that's how they're stored locally.
+                                    val subNotes = openNotes.filter {
+                                        it.category == category.name && it.subcategory == sub.name
+                                    }
+                                    subNotes.take(5).forEach { note ->
+                                        Text(
+                                            text = "• " + note.body,
+                                            style = TextStyle(fontSize = 12.sp),
+                                            modifier = GlanceModifier
+                                                .fillMaxWidth()
+                                                .padding(start = 28.dp, top = 1.dp, bottom = 1.dp),
+                                        )
+                                    }
+                                    if (subNotes.size > 5) {
+                                        Text(
+                                            text = "+ ${subNotes.size - 5} more",
+                                            style = TextStyle(fontSize = 12.sp),
+                                            modifier = GlanceModifier.padding(start = 28.dp),
                                         )
                                     }
                                 }

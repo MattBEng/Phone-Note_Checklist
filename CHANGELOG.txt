@@ -2,6 +2,45 @@ CHECKLIST APP - CHANGE LOG
 (plain language, newest at the top)
 
 ===========================================
+2026-09-15 (j)
+===========================================
+- Correction to the last entry below: I initially said the "conflicts with
+  an existing installation" error just needed one more uninstall. You did
+  three, and it kept happening - that told me it wasn't stale data on your
+  phone, it was the build pipeline itself.
+- Found it: the fix from two nights ago (a permanent signing key, so every
+  build uses the same signature) had silently reverted out of
+  app/build.gradle.kts at some point - same silent-revert pattern that hit
+  several other files tonight, except this one wasn't re-checked after the
+  first time it was fixed. With that block missing, every single GitHub
+  Actions build was quietly back to signing itself with a brand new random
+  key, so literally every build conflicted with the last one - explaining
+  why uninstalling never actually got ahead of it.
+- Fix: re-added the signingConfigs block to app/build.gradle.kts, pointing
+  at the same app/debug.keystore file (which was never deleted, just
+  unreferenced). Verified twice this time that it actually landed.
+- File changed: app/build.gradle.kts
+- After this builds: do ONE more full uninstall + fresh install from the
+  GitHub Release. From this point every build - CI and any future one -
+  should share the same key, so updates (in-app and manual) should finally
+  install cleanly in place from here on.
+
+===========================================
+2026-09-15 (i)
+===========================================
+- Widget: expanding a category now shows a real second tier - each
+  subcategory's actual open items (not just its count), matching what the
+  app itself shows. Capped at 5 items per subcategory with a "+N more" if
+  there's more than that, so the widget can't grow unbounded.
+- Widget: adding, checking off, or deleting a note now redraws the widget
+  immediately, instead of waiting for the background sync to get around to
+  it (which could take a few seconds to a minute).
+- Files changed:
+  app/src/main/kotlin/com/mattbrady/checklist/widget/ChecklistWidget.kt
+  app/src/main/kotlin/com/mattbrady/checklist/data/ChecklistRepository.kt
+  app/src/main/kotlin/com/mattbrady/checklist/data/local/NoteDao.kt
+
+===========================================
 2026-09-15 (h)
 ===========================================
 - Fixed: on the "Connect to your Worker" setup screen, tapping Save did

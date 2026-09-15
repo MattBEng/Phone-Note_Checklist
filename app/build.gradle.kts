@@ -23,6 +23,20 @@ android {
         versionName = "1.0"
     }
 
+    // A committed, stable debug key - so every build (yours and GitHub's)
+    // signs with the SAME key. Without this, Gradle silently generates a
+    // brand new random debug key per machine, and Android refuses to
+    // install/update an APK over one signed with a different key. Password/
+    // alias below are the standard, non-secret Android debug convention.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

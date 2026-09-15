@@ -52,17 +52,20 @@ class ChecklistRepository(
             deleted = false,
         )
         db.noteDao().insert(entity)
+        ChecklistWidget().updateAll(context)
         SyncScheduler.scheduleSyncNow(context)
         return preview
     }
 
     suspend fun toggleDone(localId: Long, done: Boolean) {
         db.noteDao().setDoneLocal(localId, done, System.currentTimeMillis())
+        ChecklistWidget().updateAll(context)
         SyncScheduler.scheduleSyncNow(context)
     }
 
     suspend fun deleteNote(localId: Long) {
         db.noteDao().markPendingDelete(localId, System.currentTimeMillis())
+        ChecklistWidget().updateAll(context)
         SyncScheduler.scheduleSyncNow(context)
     }
 

@@ -16,6 +16,9 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE deleted = 0 AND pendingDelete = 0 ORDER BY createdAt DESC")
     fun observeActive(): Flow<List<NoteEntity>>
 
+    @Query("SELECT * FROM notes WHERE deleted = 0 AND pendingDelete = 0 AND done = 0 ORDER BY createdAt DESC")
+    suspend fun getOpenNotesOnce(): List<NoteEntity>
+
     @Query("SELECT * FROM notes WHERE serverId IS NULL AND pendingDelete = 0")
     suspend fun getPendingNew(): List<NoteEntity>
 
