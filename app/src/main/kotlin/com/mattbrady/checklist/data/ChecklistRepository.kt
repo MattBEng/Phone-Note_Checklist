@@ -95,6 +95,14 @@ class ChecklistRepository(
             val tree = api.getCategories()
             db.categoryDao().replaceTree(tree.categories)
 
+            // Pull the full note list down too, not just push local changes
+            // up - otherwise the app's own list only ever shows notes it
+            // created itself, while the widget (which reads category counts
+            // straight from the server) shows everything, and the two
+            // permanently disagree.
+            val notesResponse = api.listNotes()
+            db.noteDao().mergeFromServer(notesResponse.notes)
+
             // Redraw the widget too - without this, only the app screen (which
             // watches the database live) updates after a sync. The widget reads
             // a one-off snapshot each time it's drawn, so it needs to be told

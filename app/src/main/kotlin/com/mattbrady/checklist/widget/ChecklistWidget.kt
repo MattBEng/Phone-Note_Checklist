@@ -4,15 +4,25 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Button
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
@@ -26,11 +36,16 @@ import androidx.glance.text.TextStyle
 import com.mattbrady.checklist.data.local.AppDatabase
 import com.mattbrady.checklist.ui.CaptureActivity
 
+private const val NONE_EXPANDED = -1L
+private val expandedCategoryKey = longPreferencesKey("expanded_category_id")
+private val categoryIdParam = ActionParameters.Key<Long>("category_id")
+
 /**
- * Home-screen widget. Shows your categories with an open-item count, and a
- * "+ Add" button that opens CaptureActivity — a small floating box overlaid
- * on the home screen, since Android widgets can't host a real text field
- * (see SETUP.md). Refreshed after every successful sync.
+ * Home-screen widget. Shows your categories with an open-item count; tap a
+ * category to expand/collapse its subcategories, and "+ Add" opens
+ * CaptureActivity - a small floating box overlaid on the home screen, since
+ * Android widgets can't host a real text field (see SETUP.md). Refreshed
+ * after every successful sync.
  */
 class ChecklistWidget : GlanceAppWidget() {
 
@@ -40,6 +55,9 @@ class ChecklistWidget : GlanceAppWidget() {
         val subcategories = db.categoryDao().getSubcategoriesOnce()
 
         provideContent {
+            val prefs = currentState<Preferences>()
+            val expandedId = prefs[expandedCategoryKey] ?: NONE_EXPANDED
+
             GlanceTheme {
                 Column(
                     modifier = GlanceModifier
@@ -67,12 +85,22 @@ class ChecklistWidget : GlanceAppWidget() {
                         )
                     } else {
                         categories.take(6).forEach { category ->
-                            val openCount = subcategories
-                                .filter { it.categoryId == category.id }
-                                .sumOf { it.openCount }
-                            Row(modifier = GlanceModifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                            val categorySubs = subcategories.filter { it.categoryId == category.id }
+                            val openCount = categorySubs.sumOf { it.openCount }
+                            val isExpanded = expandedId == category.id
+
+                            Row(
+                                modifier = GlanceModifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp)
+                                    .clickable(
+                                        actionRunCallback<ToggleCategoryAction>(
+                                            actionParametersOf(categoryIdParam to category.id)
+                                        )
+                                    )
+                            ) {
                                 Text(
-                                    text = category.name,
+                                    text = (if (isExpanded) "▾ " else "▸ ") + category.name,
                                     style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
                                 )
                                 Spacer(modifier = GlanceModifier.height(1.dp).defaultWeight())
@@ -81,11 +109,47 @@ class ChecklistWidget : GlanceAppWidget() {
                                     style = TextStyle(fontSize = 16.sp),
                                 )
                             }
+
+                            if (isExpanded) {
+                                categorySubs.forEach { sub ->
+                                    Row(
+                                        modifier = GlanceModifier
+                                            .fillMaxWidth()
+                                            .padding(start = 16.dp, top = 2.dp, bottom = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = sub.name,
+                                            style = TextStyle(fontSize = 14.sp),
+                                        )
+                                        Spacer(modifier = GlanceModifier.height(1.dp).defaultWeight())
+                                        Text(
+                                            text = "${sub.openCount} open",
+                                            style = TextStyle(fontSize = 14.sp),
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/** Toggles a category's expanded/collapsed state when its row is tapped. */
+class ToggleCategoryAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters,
+    ) {
+        val tappedId = parameters[categoryIdParam] ?: return
+        updateAppWidgetState(context, glanceId) { prefs ->
+            val current = prefs[expandedCategoryKey] ?: NONE_EXPANDED
+            prefs[expandedCategoryKey] = if (current == tappedId) NONE_EXPANDED else tappedId
+        }
+        ChecklistWidget().updateAll(context)
     }
 }
 
