@@ -2,6 +2,32 @@ CHECKLIST APP - CHANGE LOG
 (plain language, newest at the top)
 
 ===========================================
+2026-09-15 (h)
+===========================================
+- Fixed: on the "Connect to your Worker" setup screen, tapping Save did
+  nothing - no error, no crash, just stuck. Root cause wasn't confirmed
+  (nothing in the old code obviously breaks), so instead of guessing I made
+  the save step tell you what's wrong if it ever fails again: it now shows
+  a progress bar while saving and a red error message under the fields if
+  the save genuinely fails, instead of silently doing nothing.
+- Also restored the build-number-in-the-title-bar diagnostic (build #### in
+  the app bar) - it had silently reverted along with everything else below.
+- File changed: app/src/main/kotlin/com/mattbrady/checklist/ui/MainActivity.kt
+- Note on tonight's fixes generally: several files kept reverting back to
+  older versions on the first attempt to save them to your PC, then landed
+  fine on a second try. I don't have a confirmed cause yet (something on
+  your PC - possibly Android Studio - seems to be putting back its own
+  in-memory copy of a file shortly after an external change). I'm now
+  verifying every single file after every commit, so nothing should ship
+  half-applied, but if you notice odd/old behavior after a build, it's
+  worth mentioning which file/feature so I can double check it actually
+  landed.
+- If Save still doesn't work after this: try tapping somewhere blank on
+  the screen first (to dismiss the keyboard/autofill suggestion strip),
+  then tap Save. If it then shows a red error message, tell me exactly
+  what it says.
+
+===========================================
 2026-09-15 (g)
 ===========================================
 - Found the REAL reason the widget kept showing old categories (Boat,

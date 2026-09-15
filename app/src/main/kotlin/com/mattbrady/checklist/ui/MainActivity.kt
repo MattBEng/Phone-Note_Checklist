@@ -114,7 +114,10 @@ private fun ChecklistScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Checklist") },
+                // Shows the actual installed build number, so it's always
+                // possible to check at a glance whether an install/update
+                // really took effect, instead of guessing.
+                title = { Text("Checklist (build ${BuildConfig.VERSION_CODE})") },
                 actions = {
                     IconButton(onClick = { runSync() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync")
@@ -145,16 +148,28 @@ private fun ChecklistScreen() {
             if (syncing) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 
             if (!configured || showSettings) {
+                var settingsSaving by remember { mutableStateOf(false) }
+                var settingsError by remember { mutableStateOf<String?>(null) }
                 SettingsForm(
                     initialUrl = baseUrl ?: "",
                     initialToken = token ?: "",
                     canDismiss = configured,
+                    saving = settingsSaving,
+                    errorMessage = settingsError,
                     onSave = { url, tok ->
                         scope.launch {
-                            Prefs.setBaseUrl(context, url.trim())
-                            Prefs.setToken(context, tok.trim())
-                            showSettings = false
-                            runSync()
+                            settingsSaving = true
+                            settingsError = null
+                            try {
+                                Prefs.setBaseUrl(context, url.trim())
+                                Prefs.setToken(context, tok.trim())
+                                showSettings = false
+                                runSync()
+                            } catch (e: Exception) {
+                                settingsError = "Couldn't save: ${e.message ?: e.javaClass.simpleName}"
+                            } finally {
+                                settingsSaving = false
+                            }
                         }
                     },
                     onDismiss = { showSettings = false },
@@ -178,6 +193,8 @@ private fun SettingsForm(
     initialUrl: String,
     initialToken: String,
     canDismiss: Boolean,
+    saving: Boolean,
+    errorMessage: String?,
     onSave: (String, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -208,13 +225,32 @@ private fun SettingsForm(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
+        if (errorMessage != null) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         Spacer(Modifier.height(12.dp))
+        if (saving) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
             if (canDismiss) {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss, enabled = !saving) { Text("Cancel") }
                 Spacer(Modifier.width(8.dp))
             }
-            Button(onClick = { if (url.isNotBlank() && tok.isNotBlank()) onSave(url, tok) }) {
+            Button(
+                enabled = !saving,
+                onClick = {
+                    val trimmedUrl = url.trim()
+                    val trimmedTok = tok.trim()
+                    if (trimmedUrl.isNotEmpty() && trimmedTok.isNotEmpty()) {
+                        onSave(trimmedUrl, trimmedTok)
+                    }
+                },
+            ) {
                 Text("Save")
             }
         }
