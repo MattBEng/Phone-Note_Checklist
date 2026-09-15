@@ -67,7 +67,7 @@ class ChecklistWidget : GlanceAppWidget() {
                 ) {
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
                         Text(
-                            text = "Checklist",
+                            text = "Checklist ✓",
                             style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
                         )
                         Spacer(modifier = GlanceModifier.height(1.dp).defaultWeight())
